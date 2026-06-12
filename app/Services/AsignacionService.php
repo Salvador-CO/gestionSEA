@@ -5,16 +5,9 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-class AsignacionService
+class AsignacionService extends MoodleClient
 {
-    private $token;
-    private $url;
-
-    public function __construct()
-    {
-        $this->token = env('MOODLE_TOKEN');
-        $this->url   = env('MOODLE_URL');
-    }
+    // Hereda token, url, getCall() y postCall() de MoodleClient
 
     /**
      * Obtiene cursos que contienen la palabra EVAL en su nombre
@@ -51,7 +44,7 @@ class AsignacionService
             return $cursosFiltrados;
 
         } catch (\Exception $e) {
-            \Log::error("Error en obtenerCursosEvaluacion: " . $e->getMessage());
+            Log::error("Error en obtenerCursosEvaluacion: " . $e->getMessage());
             return [];
         }
     }

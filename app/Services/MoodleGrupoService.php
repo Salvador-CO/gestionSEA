@@ -5,16 +5,9 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-class MoodleGrupoService
+class MoodleGrupoService extends MoodleClient
 {
-    private $token;
-    private $url;
-
-    public function __construct()
-    {
-        $this->token = env('MOODLE_TOKEN');
-        $this->url   = env('MOODLE_URL');
-    }
+    // Hereda token, url, getCall() y postCall() de MoodleClient
 
     // 1. Crear el grupo en Moodle si no existe
     public function crearGrupoMoodle($courseId, $nombreGrupo, $idNumber = '')

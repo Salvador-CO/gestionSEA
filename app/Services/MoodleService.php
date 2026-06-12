@@ -2,42 +2,16 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 
-class MoodleService
+class MoodleService extends MoodleClient
 {
-    private $token;
-    private $url;
-
-    public function __construct()
-    {
-        $this->token = env('MOODLE_TOKEN');
-        $this->url   = env('MOODLE_URL');
-    }
-
-    private function call($function, $params = [])
-    {
-        $baseParams = [
-            'wstoken' => $this->token,
-            'wsfunction' => $function,
-            'moodlewsrestformat' => 'json',
-        ];
-
-        try {
-            $response = Http::timeout(120)->get($this->url, array_merge($baseParams, $params));
-            if ($response->failed()) return null;
-            $data = $response->json();
-            return isset($data['exception']) ? null : $data;
-        } catch (\Exception $e) {
-            return null;
-        }
-    }
+    // Hereda token, url y getCall() de MoodleClient
 
     public function findUserByEmail($email)
     {
         $params = ['criteria' => [['key' => 'email', 'value' => $email]]];
-        $response = $this->call('core_user_get_users', $params);
+        $response = $this->getCall('core_user_get_users', $params);
         if (!$response || empty($response['users'])) return null;
 
         $u = $response['users'][0];
@@ -64,7 +38,7 @@ class MoodleService
     public function getCategorias()
     {
         return Cache::remember('moodle_categories', 3600, function () {
-            return $this->call('core_course_get_categories') ?? [];
+            return $this->getCall('core_course_get_categories') ?? [];
         });
     }
 
@@ -76,9 +50,9 @@ class MoodleService
         if ($forceRefresh) Cache::forget($cacheKey);
 
         return Cache::remember($cacheKey, 3600, function () use ($filtroCentro) {
-            $usersResponse = $this->call('core_user_get_users', ['criteria' => [['key' => 'deleted', 'value' => '0']]]);
+            $usersResponse = $this->getCall('core_user_get_users', ['criteria' => [['key' => 'deleted', 'value' => '0']]]);
             $rawUsers = $usersResponse['users'] ?? [];
-            $coursesRaw = $this->call('core_course_get_courses') ?? [];
+            $coursesRaw = $this->getCall('core_course_get_courses') ?? [];
             
             $haceUnaSemana = strtotime('-7 days');
             
@@ -128,7 +102,7 @@ class MoodleService
      */
     public function getCalificacionesFiltradas($categoryId = null, $courseId = null, $roleFilter = null, $filtroCentro = null)
     {
-        $allCourses = $this->call('core_course_get_courses') ?? [];
+        $allCourses = $this->getCall('core_course_get_courses') ?? [];
         $cursosFiltrados = $allCourses;
         
         if ($categoryId) {
@@ -146,7 +120,7 @@ class MoodleService
         }
 
         foreach ($cursosAProcesar as $idCurso) {
-            $users = $this->call('core_enrol_get_enrolled_users', ['courseid' => $idCurso]);
+            $users = $this->getCall('core_enrol_get_enrolled_users', ['courseid' => $idCurso]);
             if ($users && is_array($users)) {
                 foreach ($users as $u) {
                     $centro = 'Sin Centro';
@@ -164,7 +138,7 @@ class MoodleService
                     // FILTRO DE ROL (del select de la vista)
                     if ($roleFilter && $tipoRol !== $roleFilter) continue;
 
-                    $gradesData = $this->call('gradereport_user_get_grade_items', [
+                    $gradesData = $this->getCall('gradereport_user_get_grade_items', [
                         'courseid' => $idCurso,
                         'userid'   => $u['id']
                     ]);

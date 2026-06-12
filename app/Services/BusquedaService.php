@@ -5,16 +5,9 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
-class BusquedaService
+class BusquedaService extends MoodleClient
 {
-    private $token;
-    private $url;
-
-    public function __construct()
-    {
-        $this->token = env('MOODLE_TOKEN');
-        $this->url   = env('MOODLE_URL');
-    }
+    // Hereda token, url, getCall() y postCall() de MoodleClient
 
     /**
      * Busca usuarios por múltiples criterios alternativos

@@ -35,4 +35,16 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Moodle API (Plataforma Digital SEA)
+    |--------------------------------------------------------------------------
+    | Credenciales para la integración con la plataforma Moodle del SEA.
+    | Configurar MOODLE_URL y MOODLE_TOKEN en el archivo .env
+    */
+    'moodle' => [
+        'url'   => env('MOODLE_URL'),
+        'token' => env('MOODLE_TOKEN'),
+    ],
+
 ];
