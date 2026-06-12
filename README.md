@@ -3,7 +3,7 @@
 # 🎓 gestionSEA
 
 ### Sistema de Gestión del Sistema de Enseñanza Abierta (SEA)
-**Colegio de Bachilleres del Estado de Guanajuato**
+**Colegio de Bachilleres**
 
 [![Laravel](https://img.shields.io/badge/Laravel-12.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white)](https://laravel.com)
 [![PHP](https://img.shields.io/badge/PHP-8.2+-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://php.net)
