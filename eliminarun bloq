@@ -1,0 +1,10 @@
+Pasos para borrar el módulo "Calificaciones":
+
+Archivos: Borra app/Http/Controllers/CalificacionesController.php y app/Models/Calificaciones.php.
+
+Vista: Borra la carpeta resources/views/calificaciones.
+
+Base de Datos: Ve a tu tabla permisos y borra el registro ver_calificaciones. Al borrarlo de aquí, desaparecerá automáticamente del menú lateral porque nuestro código del menú solo muestra lo que existe en esa tabla.
+
+Ruta: Si agregaste la ruta en web.php, bórrala también.
+
