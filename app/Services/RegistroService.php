@@ -7,8 +7,14 @@ use Illuminate\Support\Facades\Log;
 
 class RegistroService
 {
-    private $token = '680539ac1455db058ae622f248d11006';
-    private $url = 'https://plataformadigitalsea.cbachilleres.edu.mx/webservice/rest/server.php';
+    private $token;
+    private $url;
+
+    public function __construct()
+    {
+        $this->token = env('MOODLE_TOKEN');
+        $this->url   = env('MOODLE_URL');
+    }
 
     public function buscarUsuarioPorEmail($email)
     {

@@ -133,7 +133,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('tablero-moodle', [GrupoController::class, 'tableroMoodle'])->name('grupos.tableroMoodle');
         Route::get('tablero-moodle/grupos/{claveAsignatura}', [GrupoController::class, 'obtenerDetalleGruposMoodle']);
         Route::post('tablero-moodle/crear-remoto', [GrupoController::class, 'crearGrupoRemotoEnMoodle'])->name('grupos.crearRemoto');
-        Route::post('/tablero-moodle/asignar-asesor', [App\Http\Controllers\GrupoController::class, 'asignarAsesorMoodle'])->name('grupos.asignarAsesorMoodle');
         Route::post('/tablero-moodle/asignar-asesor', [GrupoController::class, 'asignarAsesorMoodle'])->name('grupos.asignarAsesorMoodle');
         Route::post('/tablero-moodle/desvincular-asesor', [GrupoController::class, 'desvincularAsesorMoodle'])->name('grupos.desvincularAsesorMoodle');
     });
