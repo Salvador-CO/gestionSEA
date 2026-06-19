@@ -16,45 +16,66 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $user = Auth::user();
+        $user    = Auth::user();
+        $rolName = $user->rol->nombre ?? '';
 
-        // ── KPIs (consultas locales, muy rápidas) ──────────────────────────
+        // Solo Admin y Jefe ven el panel completo
+        $esPrivilegiado = in_array(strtolower($rolName), ['administrador', 'jefe', 'admin']);
+
+        if (!$esPrivilegiado) {
+            // Usuarios operativos: solo ven bienvenida personal
+            return view('dashboard', [
+                'esPrivilegiado'         => false,
+                'totalUsuarios'          => 0,
+                'totalAsesores'          => 0,
+                'totalGrupos'            => 0,
+                'totalCorreosPendientes' => 0,
+                'gruposPorCentro'        => collect(),
+                'asesoresPorCargo'       => collect(),
+                'gruposConAsesor'        => 0,
+                'gruposSinAsesor'        => 0,
+                'ultimosLogs'            => collect(),
+                'cacheCursos'            => false,
+                'cacheStats'             => false,
+            ]);
+        }
+
+        // ── KPIs ───────────────────────────────────────────────────────────
         $totalUsuarios  = User::count();
         $totalAsesores  = Asesor::count();
         $totalGrupos    = Grupo::count();
 
-        // Correos pendientes (si la tabla existe)
         $totalCorreosPendientes = 0;
         try {
             $totalCorreosPendientes = DB::table('correos')->where('status', 0)->count();
-        } catch (\Exception $e) { /* tabla no existe aún */ }
+        } catch (\Exception $e) { }
 
-        // ── Gráfica 1: Grupos por Centro ──────────────────────────────────
+        // ── Gráfica 1: Grupos por Centro ────────────────────────────────────
         $gruposPorCentro = Centro::withCount('grupos')->get()->map(fn($c) => [
             'nombre' => $c->nombre,
             'total'  => $c->grupos_count,
         ])->filter(fn($c) => $c['total'] > 0)->values();
 
-        // ── Gráfica 2: Asesores por Cargo ─────────────────────────────────
+        // ── Gráfica 2: Asesores por Cargo ───────────────────────────────────
         $asesoresPorCargo = Asesor::with('cargo')
             ->get()
             ->groupBy(fn($a) => $a->cargo->nombre ?? 'Sin cargo')
             ->map(fn($g, $cargo) => ['cargo' => $cargo, 'total' => $g->count()])
             ->values();
 
-        // ── Gráfica 3: Grupos sincronizados vs pendientes ──────────────────
-        // (local: si tiene asesor asignado vs sin asesor)
+        // ── Gráfica 3: Estado de Grupos ──────────────────────────────────────
         $gruposConAsesor = Grupo::whereNotNull('asesor_id')->count();
         $gruposSinAsesor = $totalGrupos - $gruposConAsesor;
 
-        // ── Últimos logs de auditoría ──────────────────────────────────────
+        // ── Últimos logs ──────────────────────────────────────────────────────
         $ultimosLogs = ActivityLog::orderByDesc('created_at')->limit(8)->get();
 
-        // ── Info de caché ─────────────────────────────────────────────────
-        $cacheCursos  = Cache::has('moodle_todos_cursos');
-        $cacheStats   = Cache::has('moodle_advanced_report_all');
+        // ── Info de caché ─────────────────────────────────────────────────────
+        $cacheCursos = Cache::has('moodle_todos_cursos');
+        $cacheStats  = Cache::has('moodle_advanced_report_all');
 
         return view('dashboard', compact(
+            'esPrivilegiado',
             'totalUsuarios', 'totalAsesores', 'totalGrupos', 'totalCorreosPendientes',
             'gruposPorCentro', 'asesoresPorCargo',
             'gruposConAsesor', 'gruposSinAsesor',
