@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use App\Models\Permiso;
 use App\Models\Rol;
+use App\Services\AuditoriaService;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
@@ -155,6 +156,7 @@ class ModuloController extends Controller implements HasMiddleware
             }
         }
 
+        AuditoriaService::registrar('ACTUALIZAR_PERMISOS', 'Roles y Permisos', 'Actualizó la matriz de permisos de todos los roles');
         return back()->with('success', 'Seguridad actualizada. El sistema se refrescará en breve.');
     }
 
@@ -171,11 +173,11 @@ class ModuloController extends Controller implements HasMiddleware
         ]);
 
         Rol::create([
-            'nombre' => $request->nombre,
+            'nombre'      => $request->nombre,
             'descripcion' => $request->descripcion ?? 'Sin descripción',
-            'activo' => 1
+            'activo'      => 1
         ]);
-
+        AuditoriaService::registrar('CREAR_ROL', 'Roles y Permisos', "Creó el rol: {$request->nombre}");
         return response()->json(['success' => '¡Rol creado correctamente!']);
     }
 

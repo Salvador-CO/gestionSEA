@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class RegistroService extends MoodleClient
 {
@@ -87,25 +88,29 @@ class RegistroService extends MoodleClient
     }
 
     public function obtenerTodosCursos() {
-        $params = [
-            'wstoken' => $this->token,
-            'wsfunction' => 'core_course_get_courses',
-            'moodlewsrestformat' => 'json',
-        ];
-        $response = Http::asForm()->post($this->url, $params);
-        return $response->json();
+        return Cache::remember('moodle_todos_cursos', 1800, function () {
+            $params = [
+                'wstoken'            => $this->token,
+                'wsfunction'         => 'core_course_get_courses',
+                'moodlewsrestformat' => 'json',
+            ];
+            $response = Http::timeout(60)->asForm()->post($this->url, $params);
+            return $response->json() ?? [];
+        });
     }
 
     public function obtenerGruposCurso($courseId) {
-        $params = [
-            'wstoken' => $this->token,
-            'wsfunction' => 'core_group_get_course_groups',
-            'moodlewsrestformat' => 'json',
-            'courseid' => $courseId
-        ];
-        $response = Http::asForm()->post($this->url, $params);
-        $res = $response->json();
-        return (isset($res['exception'])) ? [] : $res;
+        return Cache::remember("moodle_grupos_curso_{$courseId}", 900, function () use ($courseId) {
+            $params = [
+                'wstoken'            => $this->token,
+                'wsfunction'         => 'core_group_get_course_groups',
+                'moodlewsrestformat' => 'json',
+                'courseid'           => $courseId
+            ];
+            $response = Http::asForm()->post($this->url, $params);
+            $res = $response->json();
+            return (isset($res['exception'])) ? [] : $res;
+        });
     }
 
     public function inscribirUsuarioEnCurso($userId, $courseId, $groupId = null) {

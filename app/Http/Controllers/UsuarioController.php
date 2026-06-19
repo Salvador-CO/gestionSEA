@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Rol;
 use App\Services\MoodleService;
+use App\Services\AuditoriaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -69,7 +70,7 @@ class UsuarioController extends Controller implements HasMiddleware
             'password' => Hash::make($request->password),
             'activo'   => 1
         ]);
-
+        AuditoriaService::registrar('CREAR_USUARIO', 'Usuarios', "Creó el usuario de sistema: {$request->username}");
         return redirect()->route('usuarios.index')->with('success', 'Usuario creado correctamente.');
     }
 
@@ -94,6 +95,7 @@ class UsuarioController extends Controller implements HasMiddleware
         }
 
         $usuario->update($data);
+        AuditoriaService::registrar('EDITAR_USUARIO', 'Usuarios', "Editó el usuario: {$usuario->username}");
         return redirect()->route('usuarios.index')->with('success', 'Usuario actualizado.');
     }
 
@@ -101,6 +103,8 @@ class UsuarioController extends Controller implements HasMiddleware
         $usuario = User::findOrFail($id);
         $usuario->activo = !$usuario->activo;
         $usuario->save();
+        $estado = $usuario->activo ? 'activó' : 'suspendió';
+        AuditoriaService::registrar('TOGGLE_USUARIO', 'Usuarios', "Se {$estado} la cuenta del usuario: {$usuario->username}");
         return back()->with('success', 'Estado de cuenta actualizado.');
     }
 }

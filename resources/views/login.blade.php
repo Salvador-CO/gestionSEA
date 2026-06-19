@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,7 +12,7 @@
     <!-- Fuente formal -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
 
-    <title>Login - Sistema de Control Escolar SEA</title>
+    <title>Login - Sistema SEA</title>
 
     <style>
         :root {
@@ -43,7 +44,7 @@
             border-radius: 12px;
             background: #fff;
             border-top: 6px solid var(--cobach-green);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
             overflow: hidden;
         }
 
@@ -93,7 +94,7 @@
 
         .form-control:focus {
             border-color: var(--cobach-green);
-            box-shadow: 0 0 0 0.2rem rgba(26,77,46,0.15);
+            box-shadow: 0 0 0 0.2rem rgba(26, 77, 46, 0.15);
         }
 
         .btn-login {
@@ -137,8 +138,15 @@
         }
 
         @keyframes fadeIn {
-            from {opacity:0; transform:translateY(-5px);}
-            to {opacity:1; transform:translateY(0);}
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .footer {
@@ -156,7 +164,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255,255,255,0.8);
+            background: rgba(255, 255, 255, 0.8);
             display: none;
             align-items: center;
             justify-content: center;
@@ -173,109 +181,110 @@
 
 <body>
 
-<!-- OVERLAY -->
-<div class="loading-overlay" id="loadingOverlay">
-    <div class="text-center">
-        <div class="spinner-border"></div>
-        <div class="mt-2 text-muted">Validando credenciales...</div>
-    </div>
-</div>
-
-<div class="login-container">
-    <div class="login-card">
-
-        <div class="login-header">
-            <i class="bi bi-mortarboard-fill"></i>
-            <h3>SISTEMA SEA</h3>
-            <p>Control Escolar Institucional</p>
+    <!-- OVERLAY -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="text-center">
+            <div class="spinner-border"></div>
+            <div class="mt-2 text-muted">Validando credenciales...</div>
         </div>
+    </div>
 
-        <div class="card-body">
+    <div class="login-container">
+        <div class="login-card">
 
-            @if($errors->has('error_login'))
+            <div class="login-header">
+                <i class="bi bi-mortarboard-fill"></i>
+                <h3>SIGAE-SEA</h3>
+                <p>Sistema de Gestion Academica Escolar </p>
+            </div>
+
+            <div class="card-body">
+
+                @if($errors->has('error_login'))
                 <div class="alert alert-danger alert-custom mb-3">
                     <i class="bi bi-exclamation-triangle-fill me-2"></i>
                     <span>{{ $errors->first('error_login') }}</span>
                 </div>
-            @endif
+                @endif
 
-            @if($errors->has('suspendido'))
+                @if($errors->has('suspendido'))
                 <div class="alert alert-warning alert-custom mb-3">
                     <i class="bi bi-person-x-fill me-2"></i>
                     <span>{{ $errors->first('suspendido') }}</span>
                 </div>
-            @endif
+                @endif
 
-            <form action="/login" method="POST" id="loginForm">
-                @csrf
+                <form action="/login" method="POST" id="loginForm">
+                    @csrf
 
-                <div class="mb-3">
-                    <label class="form-label">Usuario Institucional</label>
-                    <div class="input-group">
-                        <span class="input-group-text">
-                            <i class="bi bi-person"></i>
-                        </span>
-                        <input type="text" name="username" class="form-control"
-                               value="{{ old('username') }}"
-                               placeholder="Ej. matricula_123" required autofocus>
+                    <div class="mb-3">
+                        <label class="form-label">Usuario Institucional</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-person"></i>
+                            </span>
+                            <input type="text" name="username" class="form-control"
+                                value="{{ old('username') }}"
+                                placeholder="Ej. matricula_123" required autofocus>
+                        </div>
                     </div>
-                </div>
 
-                <div class="mb-4">
-                    <label class="form-label">Contraseña</label>
-                    <div class="input-group">
-                        <span class="input-group-text">
-                            <i class="bi bi-lock"></i>
-                        </span>
-                        <input type="password" name="password" id="password" class="form-control"
-                               placeholder="••••••••" required>
-                        <button type="button" class="input-group-text" id="togglePassword">
-                            <i class="bi bi-eye"></i>
-                        </button>
+                    <div class="mb-4">
+                        <label class="form-label">Contraseña</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-lock"></i>
+                            </span>
+                            <input type="password" name="password" id="password" class="form-control"
+                                placeholder="••••••••" required>
+                            <button type="button" class="input-group-text" id="togglePassword">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
                     </div>
-                </div>
 
-                <button type="submit" class="btn btn-login w-100" id="loginBtn">
-                    Iniciar Sesión
-                </button>
+                    <button type="submit" class="btn btn-login w-100" id="loginBtn">
+                        Iniciar Sesión
+                    </button>
 
-            </form>
+                </form>
+            </div>
+
+            <div class="footer">
+                Sistema oficial · Colegio de Bachilleres &copy; 2026
+            </div>
+
         </div>
-
-        <div class="footer">
-            Sistema oficial · Colegio de Bachilleres &copy; 2026
-        </div>
-
     </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-<script>
-    // MOSTRAR / OCULTAR CONTRASEÑA
-    const togglePassword = document.getElementById('togglePassword');
-    const password = document.getElementById('password');
+    <script>
+        // MOSTRAR / OCULTAR CONTRASEÑA
+        const togglePassword = document.getElementById('togglePassword');
+        const password = document.getElementById('password');
 
-    togglePassword.addEventListener('click', () => {
-        const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
-        password.setAttribute('type', type);
+        togglePassword.addEventListener('click', () => {
+            const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+            password.setAttribute('type', type);
 
-        togglePassword.innerHTML = type === 'password'
-            ? '<i class="bi bi-eye"></i>'
-            : '<i class="bi bi-eye-slash"></i>';
-    });
+            togglePassword.innerHTML = type === 'password' ?
+                '<i class="bi bi-eye"></i>' :
+                '<i class="bi bi-eye-slash"></i>';
+        });
 
-    // LOADING AL ENVIAR
-    const form = document.getElementById('loginForm');
-    const btn = document.getElementById('loginBtn');
-    const overlay = document.getElementById('loadingOverlay');
+        // LOADING AL ENVIAR
+        const form = document.getElementById('loginForm');
+        const btn = document.getElementById('loginBtn');
+        const overlay = document.getElementById('loadingOverlay');
 
-    form.addEventListener('submit', () => {
-        btn.classList.add('btn-loading');
-        btn.innerHTML = 'Procesando...';
-        overlay.style.display = 'flex';
-    });
-</script>
+        form.addEventListener('submit', () => {
+            btn.classList.add('btn-loading');
+            btn.innerHTML = 'Procesando...';
+            overlay.style.display = 'flex';
+        });
+    </script>
 
 </body>
+
 </html>

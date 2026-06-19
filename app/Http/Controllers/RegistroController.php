@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Services\MoodleService;
 use App\Services\RegistroService;
 use App\Services\BusquedaService;
+use App\Services\AuditoriaService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
@@ -52,10 +53,16 @@ class RegistroController extends Controller
         $res = $this->registro->crearUsuarioMoodle($datos);
 
         if ($res['success']) {
+            $nombreCompleto = mb_strtoupper($datos['firstname'] . ' ' . $datos['lastname'], 'UTF-8');
+            AuditoriaService::registrar(
+                'REGISTRAR_ALUMNO',
+                'Registro',
+                "Registró al alumno {$nombreCompleto} en Moodle (Centro: {$datos['centro']})"
+            );
             return redirect()->route('registro.index')
                 ->with('success', 'Usuario registrado con éxito.')
                 ->with('nuevo_usuario_id', $res['id'])
-                ->with('nuevo_usuario_nombre', mb_strtoupper($datos['firstname'] . ' ' . $datos['lastname'], 'UTF-8'))
+                ->with('nuevo_usuario_nombre', $nombreCompleto)
                 ->with('nuevo_usuario_centro', $datos['centro']);
         }
         return back()->withInput()->with('error', 'Error en Moodle: ' . $res['message']);
@@ -220,7 +227,15 @@ class RegistroController extends Controller
     }
 
     public function inscribirCurso(Request $request) {
-        return response()->json($this->registro->inscribirUsuarioEnCurso($request->userId, $request->courseId, $request->groupId));
+        $resultado = $this->registro->inscribirUsuarioEnCurso($request->userId, $request->courseId, $request->groupId);
+        if (!empty($resultado['success'])) {
+            AuditoriaService::registrar(
+                'INSCRIBIR_CURSO',
+                'Registro',
+                "Inscribió al usuario ID:{$request->userId} en el curso ID:{$request->courseId}" . ($request->groupId ? " / grupo ID:{$request->groupId}" : '')
+            );
+        }
+        return response()->json($resultado);
     }
 
     public function listaUsuarios() {

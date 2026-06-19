@@ -7,6 +7,9 @@ use App\Models\Asesor;
 use App\Models\Centro;
 use App\Models\Asignatura;
 use App\Services\MoodleGrupoService;
+use App\Services\AuditoriaService;
+use App\Exports\GruposExport;
+use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 
 class GrupoController extends Controller
@@ -63,12 +66,12 @@ class GrupoController extends Controller
 
         Grupo::create([
             'codigo_moodle' => $codigoMoodle,
-            'centro_id' => $request->centro_id,
+            'centro_id'     => $request->centro_id,
             'asignatura_id' => $request->asignatura_id,
-            'asesor_id' => $request->asesor_id,
-            'p_numero' => $consecutivo
+            'asesor_id'     => $request->asesor_id,
+            'p_numero'      => $consecutivo
         ]);
-
+        AuditoriaService::registrar('CREAR_GRUPO', 'Grupos', "Creó el grupo local {$codigoMoodle}");
         return back()->with('success', "Grupo $codigoMoodle generado localmente.");
     }
 
@@ -95,6 +98,7 @@ class GrupoController extends Controller
             $moodleGroupId = $grupoMoodle['id'];
         }
 
+        AuditoriaService::registrar('SINCRONIZAR_GRUPO', 'Grupos', "Sincronizó el grupo {$grupo->codigo_moodle} con Moodle");
         return back()->with('success', "¡Excelente! El grupo {$grupo->codigo_moodle} se sincronizó correctamente en Moodle.");
     }
 
@@ -109,8 +113,16 @@ class GrupoController extends Controller
 
     public function destroy(Grupo $grupo)
     {
+        $codigo = $grupo->codigo_moodle;
         $grupo->delete();
+        AuditoriaService::registrar('ELIMINAR_GRUPO', 'Grupos', "Eliminó el grupo {$codigo}");
         return back()->with('success', 'Asignación eliminada.');
+    }
+
+    public function exportar()
+    {
+        AuditoriaService::registrar('EXPORTAR_EXCEL', 'Grupos', 'Exportó la lista de grupos a Excel');
+        return Excel::download(new GruposExport(), 'grupos_sea_' . date('Y-m-d') . '.xlsx');
     }
 
     public function tableroMoodle()
@@ -292,8 +304,13 @@ class GrupoController extends Controller
             return response()->json(['success' => false, 'message' => $res['message']], 400);
         }
 
+        AuditoriaService::registrar(
+            'ASIGNAR_ASESOR_MOODLE',
+            'Grupos',
+            "Asignó asesor ({$request->email} / {$tagRol}) al grupo ID:{$request->moodle_group_id} en Moodle"
+        );
         return response()->json([
-            'success' => true, 
+            'success' => true,
             'message' => 'Asesor vinculado exitosamente en la plataforma Moodle.',
             'nombre_completo' => $res['nombre_asesor'] . " ($tagRol)"
         ]);

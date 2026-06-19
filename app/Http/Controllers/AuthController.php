@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Services\AuditoriaService;
 
 class AuthController extends Controller
 {
@@ -32,6 +33,7 @@ class AuthController extends Controller
 
             // 3. Si todo bien, al dashboard
             $request->session()->regenerate();
+            AuditoriaService::registrar('LOGIN', 'Autenticación', 'Inició sesión en el sistema');
             return redirect()->intended('dashboard');
         }
 
@@ -42,6 +44,7 @@ class AuthController extends Controller
     }
 
     public function logout() {
+        AuditoriaService::registrar('LOGOUT', 'Autenticación', 'Cerró sesión');
         Auth::logout();
         return redirect('/');
     }

@@ -9,12 +9,14 @@ use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\CalificacionesController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\RegistroController;
-use App\Http\Controllers\AsignacionController; // Nuevo Controlador Separado
+use App\Http\Controllers\AsignacionController;
 use App\Http\Controllers\AsesorController;
 use App\Http\Controllers\CentroController;
 use App\Http\Controllers\AsignaturaController;
 use App\Http\Controllers\CargoController;
 use App\Http\Controllers\GrupoController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\AuditoriaController;
 
 /*
 |--------------------------------------------------------------------------
@@ -33,9 +35,8 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::middleware(['auth'])->group(function () {
 
     // Panel principal tras iniciar sesión
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::post('/dashboard/limpiar-cache', [DashboardController::class, 'limpiarCache'])->name('dashboard.limpiarCache');
 
     /* |--- A. MÓDULO DE SEGURIDAD Y PERMISOS --- 
     | Solo usuarios con permiso para gestionar roles (Administradores)
@@ -114,7 +115,8 @@ Route::middleware(['auth'])->group(function () {
     /* |--- G. Gestionar catalogos y grupos --- 
     */
     Route::middleware(['checkpermiso:gestionar_asesores'])->group(function () {
-        Route::resource('asesores', AsesorController::class);        
+        Route::resource('asesores', AsesorController::class);
+        Route::get('/asesores/exportar', [AsesorController::class, 'exportar'])->name('asesores.exportar');
     });
     Route::middleware(['checkpermiso:gestionar_centros'])->group(function () {
         Route::resource('centros', CentroController::class);
@@ -127,14 +129,19 @@ Route::middleware(['auth'])->group(function () {
     });
     Route::middleware(['checkpermiso:gestionar_grupos'])->group(function () {
         Route::resource('grupos', GrupoController::class);
+        Route::get('/grupos/exportar', [GrupoController::class, 'exportar'])->name('grupos.exportar');
         Route::post('grupos/{grupo}/sincronizar', [GrupoController::class, 'sincronizar'])->name('grupos.sincronizar');
-    
-        // NUEVAS RUTAS SEPARADAS PARA EL TABLERO MOODLE
+
         Route::get('tablero-moodle', [GrupoController::class, 'tableroMoodle'])->name('grupos.tableroMoodle');
         Route::get('tablero-moodle/grupos/{claveAsignatura}', [GrupoController::class, 'obtenerDetalleGruposMoodle']);
         Route::post('tablero-moodle/crear-remoto', [GrupoController::class, 'crearGrupoRemotoEnMoodle'])->name('grupos.crearRemoto');
         Route::post('/tablero-moodle/asignar-asesor', [GrupoController::class, 'asignarAsesorMoodle'])->name('grupos.asignarAsesorMoodle');
         Route::post('/tablero-moodle/desvincular-asesor', [GrupoController::class, 'desvincularAsesorMoodle'])->name('grupos.desvincularAsesorMoodle');
+    });
+
+    /* |--- I. AUDITORÍA --- */
+    Route::middleware(['checkpermiso:gestionar_usuarios'])->group(function () {
+        Route::get('/auditoria', [AuditoriaController::class, 'index'])->name('auditoria.index');
     });
 
     /* |--- H. Gestionar correo --- 

@@ -168,6 +168,12 @@
                 </a>
                 @endif
 
+                @if(auth()->user()->tienePermiso('gestionar_usuarios'))
+                <a href="{{ route('auditoria.index') }}" class="{{ Request::is('auditoria*') ? 'active' : '' }}">
+                    <i class="bi bi-journal-check me-2"></i> Auditoría
+                </a>
+                @endif
+
                 @if(auth()->user()->tienePermiso('gestionar_roles_permisos'))
                 <a href="/roles" class="{{ Request::is('roles*') ? 'active' : '' }}">
                     <i class="bi bi-shield-lock me-2"></i> Roles y Permisos
