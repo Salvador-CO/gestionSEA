@@ -30,6 +30,30 @@ class RegistroService extends MoodleClient
         }
     }
 
+    /**
+     * Busca un usuario en Moodle por su username (matrícula).
+     * El username en Moodle corresponde a la matrícula del estudiante.
+     */
+    public function buscarUsuarioPorUsername($username)
+    {
+        $params = [
+            'wstoken'            => $this->token,
+            'wsfunction'         => 'core_user_get_users_by_field',
+            'moodlewsrestformat' => 'json',
+            'field'              => 'username',
+            'values'             => [strtolower(trim($username))]
+        ];
+
+        try {
+            $response = Http::asForm()->post($this->url, $params);
+            $res = $response->json();
+            return (is_array($res) && count($res) > 0) ? $res[0] : null;
+        } catch (\Exception $e) {
+            Log::error('Error buscando por username: ' . $e->getMessage());
+            return null;
+        }
+    }
+
     public function crearUsuarioMoodle($datos)
     {
         $username = strtolower(preg_replace('/[^a-z0-9]/', '', $datos['username']));

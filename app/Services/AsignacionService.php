@@ -108,7 +108,8 @@ class AsignacionService extends MoodleClient
             $quizzes = $resQuiz->json()['quizzes'] ?? [];
             if (empty($quizzes)) return ['success' => false, 'message' => 'Sin examen.'];
 
-            $quizId = $quizzes[0]['id'];
+            $quizId   = $quizzes[0]['id'];
+            $limiteQuiz = (int)($quizzes[0]['attempts'] ?? 0); // 0 = ilimitado
 
             $resAttempts = Http::asForm()->post($this->url, [
                 'wstoken' => $this->token,
@@ -118,12 +119,48 @@ class AsignacionService extends MoodleClient
                 'userid' => (int)$userId,
                 'status' => 'all'
             ]);
-            
-            $attemptsData = $resAttempts->json();
+
+            $attemptsData  = $resAttempts->json();
+            $todosIntentos = $attemptsData['attempts'] ?? [];
+
+            // Contar solo los finalizados (no "inprogress")
+            $finalizados = count(array_filter($todosIntentos, fn($a) => ($a['state'] ?? '') === 'finished'));
+
+            // Obtener override del usuario en este quiz
+            $resOverrides = Http::asForm()->post($this->url, [
+                'wstoken' => $this->token,
+                'wsfunction' => 'mod_quiz_get_overrides',
+                'moodlewsrestformat' => 'json',
+                'quizid' => (int)$quizId
+            ]);
+            $overrides = $resOverrides->json()['overrides'] ?? [];
+
+            $limiteOverride = null;
+            foreach ($overrides as $ov) {
+                if (isset($ov['userid']) && (int)$ov['userid'] === (int)$userId) {
+                    $limiteOverride = (int)$ov['attempts'];
+                    break;
+                }
+            }
+
+            // Calcular límite efectivo y pendientes
+            $limiteEfectivo = $limiteOverride ?? $limiteQuiz;
+            // Si limiteEfectivo = 0 significa ilimitado → no mostramos pendientes
+            if ($limiteEfectivo > 0) {
+                $pendientes = max(0, $limiteEfectivo - $finalizados);
+            } else {
+                // Quiz ilimitado: hay pendiente si no tienen intentos en progreso pero sí pueden entrar
+                $enProgreso = count(array_filter($todosIntentos, fn($a) => ($a['state'] ?? '') === 'inprogress'));
+                $pendientes = $enProgreso > 0 ? 1 : 0; // en progreso = ya está dentro del examen
+            }
+
             return [
-                'success' => true,
-                'intentos' => $attemptsData['attempts'] ?? [],
-                'conteo' => count($attemptsData['attempts'] ?? [])
+                'success'     => true,
+                'intentos'    => $todosIntentos,
+                'conteo'      => count($todosIntentos),
+                'finalizados' => $finalizados,
+                'pendientes'  => $pendientes,
+                'limite'      => $limiteEfectivo,
             ];
         } catch (\Exception $e) {
             return ['success' => false, 'message' => $e->getMessage()];
@@ -131,10 +168,8 @@ class AsignacionService extends MoodleClient
     }
 
     /**
-     * Habilitar intento extra gestionando excepciones existentes (Update vs Create)
-     */
-    /**
-     * Habilitar intento extra gestionando excepciones existentes (Update vs Create)
+     * Habilitar intento extra gestionando excepciones existentes (Update vs Create).
+     * REGLA: Solo se puede habilitar si el alumno NO tiene intentos pendientes (pendientes = 0).
      */
     public function habilitarIntentoExtra($userId, $courseId)
     {
@@ -152,16 +187,16 @@ class AsignacionService extends MoodleClient
                 return ['success' => false, 'message' => 'No hay examen en este curso.'];
             }
 
-            $quizId = $quizzes[0]['id'];
+            $quizId     = $quizzes[0]['id'];
+            $limiteQuiz = (int)($quizzes[0]['attempts'] ?? 0);
 
-            // 2. Obtener overrides (CORRECTO en Moodle 4.x)
-            $resEx = Http::asForm()->post($this->url, [
-                'wstoken' => $this->token,
-                'wsfunction' => 'mod_quiz_get_overrides',
+            // 2. Obtener overrides existentes
+            $resEx    = Http::asForm()->post($this->url, [
+                'wstoken'            => $this->token,
+                'wsfunction'         => 'mod_quiz_get_overrides',
                 'moodlewsrestformat' => 'json',
-                'quizid' => (int)$quizId
+                'quizid'             => (int)$quizId
             ]);
-
             $overrides = $resEx->json()['overrides'] ?? [];
 
             $existingOverride = null;
@@ -172,58 +207,59 @@ class AsignacionService extends MoodleClient
                 }
             }
 
-            // 3. Calcular nuevo límite
+            // 3. Contar intentos finalizados para validar que no haya pendientes
+            $resAttempts = Http::asForm()->post($this->url, [
+                'wstoken'            => $this->token,
+                'wsfunction'         => 'mod_quiz_get_user_attempts',
+                'moodlewsrestformat' => 'json',
+                'quizid'             => (int)$quizId,
+                'userid'             => (int)$userId,
+                'status'             => 'all'
+            ]);
+            $todosIntentos = $resAttempts->json()['attempts'] ?? [];
+            $finalizados   = count(array_filter($todosIntentos, fn($a) => ($a['state'] ?? '') === 'finished'));
+
+            // 4. VALIDACIÓN DE SEGURIDAD: No habilitar si ya tiene pendientes
+            $limiteActual = $existingOverride ? (int)$existingOverride['attempts'] : $limiteQuiz;
+            if ($limiteActual > 0 && $limiteActual > $finalizados) {
+                return [
+                    'success' => false,
+                    'message' => 'El alumno ya tiene un intento habilitado sin presentar. Espere a que lo presente antes de habilitar otro.'
+                ];
+            }
+
+            // 5. Calcular nuevo límite
             if ($existingOverride) {
                 $nuevoLimite = (int)$existingOverride['attempts'] + 1;
             } else {
-                // contar intentos reales
-                $resAttempts = Http::asForm()->post($this->url, [
-                    'wstoken' => $this->token,
-                    'wsfunction' => 'mod_quiz_get_user_attempts',
-                    'moodlewsrestformat' => 'json',
-                    'quizid' => (int)$quizId,
-                    'userid' => (int)$userId,
-                    'status' => 'all'
-                ]);
-
-                $attempts = $resAttempts->json()['attempts'] ?? [];
-                $conteo = count($attempts);
-
-                // base: si ya hizo 1 → ahora puede 2
-                $nuevoLimite = max(2, $conteo + 1);
+                $nuevoLimite = max(2, $finalizados + 1);
             }
 
-            // 4. Construir override
+            // 6. Construir override
             $overrideData = [
                 'userid'   => (int)$userId,
                 'attempts' => (int)$nuevoLimite
             ];
 
             if ($existingOverride) {
-                // IMPORTANTE: incluir ID para actualizar
                 $overrideData['id'] = (int)$existingOverride['id'];
             } else {
-                // SOLO en creación
                 $overrideData['timeclose'] = time() + (7 * 24 * 3600);
             }
 
-            // 5. Guardar (FORMATO CORRECTO)
-            $params = [
-                'wstoken' => $this->token,
-                'wsfunction' => 'mod_quiz_save_overrides',
+            // 7. Guardar override
+            $params      = [
+                'wstoken'            => $this->token,
+                'wsfunction'         => 'mod_quiz_save_overrides',
                 'moodlewsrestformat' => 'json',
-                'data' => [
-                    'quizid' => (int)$quizId,
+                'data'               => [
+                    'quizid'    => (int)$quizId,
                     'overrides' => [$overrideData]
                 ]
             ];
-
             $queryString = http_build_query($params);
-
-            $finalRes = Http::withBody($queryString, 'application/x-www-form-urlencoded')
-                ->post($this->url);
-
-            $result = $finalRes->json();
+            $finalRes    = Http::withBody($queryString, 'application/x-www-form-urlencoded')->post($this->url);
+            $result      = $finalRes->json();
 
             if (isset($result['exception']) || isset($result['errorcode'])) {
                 return [
@@ -233,18 +269,121 @@ class AsignacionService extends MoodleClient
             }
 
             return [
-                'success' => true,
+                'success'      => true,
                 'nuevo_limite' => $nuevoLimite,
-                'mensaje' => "Intento habilitado correctamente. Nuevo límite: $nuevoLimite"
+                'mensaje'      => "Intento habilitado correctamente. Nuevo límite: $nuevoLimite"
             ];
 
         } catch (\Exception $e) {
             Log::error("Error en intento extra: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Error interno: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Quita el último intento extra habilitado de un usuario.
+     * Si el override queda igual a los finalizados (pendientes=0), elimina el override.
+     * Si reduce el override pero sigue por encima de los finalizados, actualiza.
+     */
+    public function quitarIntentoExtra($userId, $courseId)
+    {
+        try {
+            // 1. Obtener Quiz
+            $resQuiz = Http::asForm()->post($this->url, [
+                'wstoken'            => $this->token,
+                'wsfunction'         => 'mod_quiz_get_quizzes_by_courses',
+                'moodlewsrestformat' => 'json',
+                'courseids'          => [(int)$courseId]
+            ]);
+            $quizzes = $resQuiz->json()['quizzes'] ?? [];
+            if (empty($quizzes)) {
+                return ['success' => false, 'message' => 'No hay examen en este curso.'];
+            }
+            $quizId = $quizzes[0]['id'];
+
+            // 2. Obtener override del usuario
+            $resEx     = Http::asForm()->post($this->url, [
+                'wstoken'            => $this->token,
+                'wsfunction'         => 'mod_quiz_get_overrides',
+                'moodlewsrestformat' => 'json',
+                'quizid'             => (int)$quizId
+            ]);
+            $overrides        = $resEx->json()['overrides'] ?? [];
+            $existingOverride = null;
+            foreach ($overrides as $ov) {
+                if (isset($ov['userid']) && (int)$ov['userid'] === (int)$userId) {
+                    $existingOverride = $ov;
+                    break;
+                }
+            }
+
+            if (!$existingOverride) {
+                return ['success' => false, 'message' => 'No hay intento extra que quitar para este alumno.'];
+            }
+
+            // 3. Contar intentos finalizados
+            $resAttempts   = Http::asForm()->post($this->url, [
+                'wstoken'            => $this->token,
+                'wsfunction'         => 'mod_quiz_get_user_attempts',
+                'moodlewsrestformat' => 'json',
+                'quizid'             => (int)$quizId,
+                'userid'             => (int)$userId,
+                'status'             => 'all'
+            ]);
+            $todosIntentos = $resAttempts->json()['attempts'] ?? [];
+            $finalizados   = count(array_filter($todosIntentos, fn($a) => ($a['state'] ?? '') === 'finished'));
+
+            $limiteActual = (int)$existingOverride['attempts'];
+            $nuevoLimite  = $limiteActual - 1;
+
+            // 4a. Si el nuevo límite es <= finalizados → eliminar el override completo
+            if ($nuevoLimite <= $finalizados) {
+                $params      = [
+                    'wstoken'            => $this->token,
+                    'wsfunction'         => 'mod_quiz_delete_overrides',
+                    'moodlewsrestformat' => 'json',
+                    'quizid'             => (int)$quizId,
+                    'overrides'          => [(int)$existingOverride['id']]
+                ];
+                $queryString = http_build_query($params);
+                Http::withBody($queryString, 'application/x-www-form-urlencoded')->post($this->url);
+
+                return [
+                    'success' => true,
+                    'mensaje' => 'Intento extra eliminado. El override fue removido correctamente.'
+                ];
+            }
+
+            // 4b. Si aún quedarían pendientes válidos → actualizar override con nuevo límite
+            $overrideData = [
+                'id'       => (int)$existingOverride['id'],
+                'userid'   => (int)$userId,
+                'attempts' => $nuevoLimite
+            ];
+            $params      = [
+                'wstoken'            => $this->token,
+                'wsfunction'         => 'mod_quiz_save_overrides',
+                'moodlewsrestformat' => 'json',
+                'data'               => [
+                    'quizid'    => (int)$quizId,
+                    'overrides' => [$overrideData]
+                ]
+            ];
+            $queryString = http_build_query($params);
+            $result      = Http::withBody($queryString, 'application/x-www-form-urlencoded')->post($this->url)->json();
+
+            if (isset($result['exception']) || isset($result['errorcode'])) {
+                return ['success' => false, 'message' => 'Error Moodle: ' . ($result['message'] ?? 'Error desconocido')];
+            }
 
             return [
-                'success' => false,
-                'message' => 'Error interno: ' . $e->getMessage()
+                'success' => true,
+                'mensaje' => "Intento retirado. Nuevo límite: $nuevoLimite"
             ];
+
+        } catch (\Exception $e) {
+            Log::error("Error en quitarIntentoExtra: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Error interno: ' . $e->getMessage()];
         }
     }
     /**

@@ -194,8 +194,8 @@
 
             <div class="login-header">
                 <i class="bi bi-mortarboard-fill"></i>
-                <h3>SIGAE-SEA</h3>
-                <p>Sistema de Gestion Academica Escolar </p>
+                <h3>SIGAEEAA</h3>
+                <p>Sistema de Gestión Académica Escolar de Estudiantes y Asesores (SEA)</p>
             </div>
 
             <div class="card-body">

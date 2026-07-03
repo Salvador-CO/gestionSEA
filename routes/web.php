@@ -97,8 +97,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/asignacion', [AsignacionController::class, 'index'])->name('asignacion.index');
         Route::get('/asignacion/validar-estudiante', [AsignacionController::class, 'validarEstudiante'])->name('asignacion.validar');
         Route::post('/asignacion/procesar', [AsignacionController::class, 'procesarAsignacion'])->name('asignacion.procesar');
-        // Corregido: nombre de la función debe ser reiniciarIntento
         Route::post('/asignacion/nuevo-intento', [AsignacionController::class, 'reiniciarIntento'])->name('asignacion.reintentar');
+        Route::post('/asignacion/quitar-intento', [AsignacionController::class, 'quitarIntento'])->name('asignacion.quitarIntento');
         Route::get('/asignacion/historial', [AsignacionController::class, 'verHistorial'])->name('asignacion.historial');
         
     });
