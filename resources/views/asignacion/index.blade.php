@@ -193,6 +193,39 @@
         padding: 3px 8px;
         line-height: 1.4;
     }
+
+    /* Botón Ver Calificaciones (trigger lazy) */
+    .btn-ver-calificaciones {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 10px 20px;
+        font-weight: 700;
+        font-size: 0.88rem;
+        letter-spacing: 0.3px;
+        transition: all 0.25s ease;
+        box-shadow: 0 4px 15px rgba(102,126,234,0.35);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        justify-content: center;
+    }
+    .btn-ver-calificaciones:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(102,126,234,0.45);
+        color: white;
+    }
+    .btn-ver-calificaciones.collapsed {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        color: #495057;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .btn-ver-calificaciones.collapsed:hover {
+        background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+        color: #212529;
+    }
 </style>
 
 <div class="container-fluid py-3">
@@ -277,53 +310,69 @@
 
         <!-- COLUMNA DERECHA: TABLAS (70%) -->
         <div class="col-xl-9 col-lg-8">
-            <div id="panelTablas" class="d-none">
-                <div class="row g-3">
-                    <!-- Tabla de Calificaciones (LA MÁS IMPORTANTE - ARRIBA) -->
-                    <div class="col-12">
-                        <div class="card shadow-sm border-top border-4 border-warning animate__animated animate__fadeInRight">
-                            <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
-                                <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-star-fill text-warning me-2"></i>Calificaciones e Intentos de Evaluación</h6>
-                                <span class="badge bg-warning text-dark small-text">Atención Prioritaria</span>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0 table-evaluaciones">
-                                    <thead class="small">
-                                        <tr>
-                                            <th class="ps-3">CURSO EVALUACIÓN</th>
-                                            <th class="text-center">CALIFICACIÓN</th>
-                                            <th class="text-center">INTENTOS</th>
-                                            <th class="text-center">PENDIENTE</th>
-                                            <th class="text-end pe-3">ACCIONES</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tbodyEval" class="small-text"></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
 
-                    <!-- Tabla de Cursos Generales (MÁS PEQUEÑA) -->
-                    <div class="col-12">
-                        <div class="card shadow-sm animate__animated animate__fadeInUp">
-                            <div class="card-header bg-light py-2">
-                                <h6 class="mb-0 small fw-bold"><i class="bi bi-journal-text me-2"></i>Otros cursos del estudiante (Vista rápida)</h6>
-                            </div>
-                            <div class="table-container-scroll">
-                                <table class="table table-sm table-hover align-middle mb-0">
-                                    <thead class="bg-white sticky-top small">
-                                        <tr>
-                                            <th class="ps-3">Nombre</th>
-                                            <th>ID</th>
-                                            <th class="text-end pe-3">Estado</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tbodyGeneral" style="font-size: 0.78rem;"></tbody>
-                                </table>
-                            </div>
+            <!-- ── FASE 1: Carga inmediata ───────────────────────────────────── -->
+            <div id="panelTablas" class="d-none">
+
+                <!-- Tabla Otros Cursos (siempre visible, sin llamadas extra) -->
+                <div class="card shadow-sm animate__animated animate__fadeInUp mb-3">
+                    <div class="card-header bg-light py-2">
+                        <h6 class="mb-0 small fw-bold"><i class="bi bi-journal-text me-2"></i>Otros cursos del estudiante (Vista rápida)</h6>
+                    </div>
+                    <div class="table-container-scroll">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead class="bg-white sticky-top small">
+                                <tr>
+                                    <th class="ps-3">Nombre</th>
+                                    <th>ID</th>
+                                    <th class="text-end pe-3">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbodyGeneral" style="font-size: 0.78rem;"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ── BOTÓN TRIGGER — Fase 2 ────────────────────────────────── -->
+                <div class="mb-3">
+                    <button class="btn-ver-calificaciones collapsed"
+                        id="btnVerCalificaciones"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#panelCalificaciones"
+                        aria-expanded="false"
+                        onclick="onToggleCalificaciones(this)">
+                        <i class="bi bi-bar-chart-fill" id="icoCalif"></i>
+                        <span id="txtCalif">Ver Calificaciones e Intentos de Evaluación</span>
+                        <span id="spinCalif" class="spinner-border spinner-border-sm d-none"></span>
+                        <i class="bi bi-chevron-down" id="chevronCalif" style="margin-left:auto;"></i>
+                    </button>
+                </div>
+
+                <!-- ── FASE 2: Carga lazy (Bootstrap Collapse) ───────────────── -->
+                <div class="collapse" id="panelCalificaciones">
+                    <div class="card shadow-sm border-top border-4 border-warning animate__animated animate__fadeInDown">
+                        <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-star-fill text-warning me-2"></i>Calificaciones e Intentos de Evaluación</h6>
+                            <span class="badge bg-warning text-dark small-text">Atención Prioritaria</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 table-evaluaciones">
+                                <thead class="small">
+                                    <tr>
+                                        <th class="ps-3">CURSO EVALUACIÓN</th>
+                                        <th class="text-center">CALIFICACIÓN</th>
+                                        <th class="text-center">INTENTOS</th>
+                                        <th class="text-center">PENDIENTE</th>
+                                        <th class="text-end pe-3">ACCIONES</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyEval" class="small-text"></tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
+
             </div>
 
             <!-- Estado Inicial -->
@@ -352,7 +401,9 @@
 <script>
     let currentUserId = null;
     let currentCentro = null;
-    let searchMode = 'email'; // 'email' o 'username'
+    let searchMode = 'email';       // 'email' o 'username'
+    let inscritosCache = null;      // guarda inscritos del último alumno buscado
+    let evaluacionesCargadas = false; // evita recargar si ya se consultó Moodle
 
     // ─── Inicializar Select2 ──────────────────────────────────────────────────────
     $(document).ready(function() {
@@ -530,8 +581,28 @@
                 // Resetear el grupo
                 document.getElementById('divGrupo').classList.add('d-none');
 
-                // Renderizar tablas
-                renderTablas(data.inscritos);
+                // ── Guardar en caché y resetear estado lazy ────────────────────
+                inscritosCache = data.inscritos;
+                evaluacionesCargadas = false;
+
+                // Colapsar el panel de calificaciones si estaba abierto
+                const collapseEl = document.getElementById('panelCalificaciones');
+                const bsCollapse = bootstrap.Collapse.getInstance(collapseEl);
+                if (bsCollapse) bsCollapse.hide();
+
+                // Resetear botón trigger
+                const btnCalif = document.getElementById('btnVerCalificaciones');
+                btnCalif.classList.add('collapsed');
+                document.getElementById('txtCalif').textContent = 'Ver Calificaciones e Intentos de Evaluación';
+                document.getElementById('chevronCalif').style.transform = '';
+                document.getElementById('icoCalif').className = 'bi bi-bar-chart-fill';
+
+                // ── FASE 1: Renderizar solo otros cursos (inmediato) ───────────
+                renderOtrosCursos(data.inscritos);
+                // Limpiar tabla eval (se cargará en Fase 2)
+                document.getElementById('tbodyEval').innerHTML =
+                    '<tr><td colspan="5" class="text-center py-4 text-muted"><i class="bi bi-info-circle me-2"></i>Presiona "Ver Calificaciones" para cargar</td></tr>';
+
                 showToast("Datos actualizados");
             })
             .catch(err => {
@@ -540,23 +611,31 @@
             });
     });
 
-    // ─── Renderizar tablas ────────────────────────────────────────────────────────
-    function renderTablas(inscritos) {
+    // ─── FASE 1: Renderizar solo "Otros Cursos" (inmediato, sin llamadas Moodle) ──
+    function renderOtrosCursos(inscritos) {
         let gen = '';
-        let ev = '';
         inscritos.forEach(c => {
             const displayName = `<b>${c.shortname}</b> | ${c.fullname}`;
             gen += `<tr><td class="ps-3">${displayName}</td><td>${c.id}</td><td class="text-end pe-3"><span class="text-success fw-bold">Activo</span></td></tr>`;
+        });
+        document.getElementById('tbodyGeneral').innerHTML =
+            gen || '<tr><td colspan="3" class="text-center py-2">Sin otros cursos</td></tr>';
+    }
 
-            if (c.fullname.toUpperCase().includes('EVAL')) {
-                const nota = c.nota || 'N/A';
-                const esAprobado = (nota !== 'N/A' && parseFloat(nota) >= 6);
-                const colorClass = esAprobado ? 'badge bg-success' : 'badge bg-danger';
+    // ─── FASE 2: Renderizar Calificaciones e Intentos (lazy, bajo demanda) ────────
+    function renderEvaluaciones(inscritos) {
+        let ev = '';
+        let hayEval = false;
 
-                // Los botones de acción SE RENDERIZAN dinámicamente en cargarEstadoIntentos
-                // porque necesitamos saber los pendientes primero.
-                // Solo dejamos el botón de historial fijo + un contenedor para los demás.
-                ev += `<tr>
+        inscritos.forEach(c => {
+            if (!c.fullname.toUpperCase().includes('EVAL')) return;
+            hayEval = true;
+
+            const nota       = c.nota || 'N/A';
+            const esAprobado = (nota !== 'N/A' && parseFloat(nota) >= 6);
+            const colorClass = esAprobado ? 'badge bg-success' : 'badge bg-danger';
+
+            ev += `<tr>
                 <td class="ps-3">
                     <div class="fw-bold">${c.fullname}</div>
                     <small class="text-muted font-monospace" style="font-size:0.7rem">ID: ${c.id}</small>
@@ -575,12 +654,48 @@
                     </div>
                 </td>
             </tr>`;
-                // Cargamos estado y actualizamos tanto pendientes como botones
-                cargarEstadoIntentos(currentUserId, c.id, nota, esAprobado);
-            }
+
+            // Ahora sí disparamos las llamadas a Moodle (overrides + intentos)
+            cargarEstadoIntentos(currentUserId, c.id, nota, esAprobado);
         });
-        document.getElementById('tbodyGeneral').innerHTML = gen || '<tr><td colspan="3" class="text-center py-2">Sin otros cursos</td></tr>';
-        document.getElementById('tbodyEval').innerHTML = ev || '<tr><td colspan="5" class="text-center py-4">No tiene evaluaciones inscritas</td></tr>';
+
+        document.getElementById('tbodyEval').innerHTML =
+            hayEval ? ev : '<tr><td colspan="5" class="text-center py-4">No tiene evaluaciones inscritas</td></tr>';
+    }
+
+    // ─── Toggle del panel de Calificaciones (botón disparador) ───────────────────
+    function onToggleCalificaciones(btn) {
+        const abierto = !btn.classList.contains('collapsed');
+        const chevron = document.getElementById('chevronCalif');
+        const ico     = document.getElementById('icoCalif');
+        const txt     = document.getElementById('txtCalif');
+        const spin    = document.getElementById('spinCalif');
+
+        if (abierto) {
+            // Panel se está ABRIENDO → cargar si no se ha cargado aún
+            chevron.style.transform = 'rotate(180deg)';
+            if (!evaluacionesCargadas && inscritosCache) {
+                spin.classList.remove('d-none');
+                ico.className = 'bi bi-hourglass-split';
+                txt.textContent = 'Cargando calificaciones...';
+                // Pequeño delay para que se vea la animación de apertura
+                setTimeout(() => {
+                    renderEvaluaciones(inscritosCache);
+                    evaluacionesCargadas = true;
+                    spin.classList.add('d-none');
+                    ico.className = 'bi bi-star-fill text-warning';
+                    txt.textContent = 'Ocultar Calificaciones e Intentos';
+                }, 300);
+            } else {
+                ico.className = 'bi bi-star-fill text-warning';
+                txt.textContent = 'Ocultar Calificaciones e Intentos';
+            }
+        } else {
+            // Panel se está CERRANDO
+            chevron.style.transform = '';
+            ico.className = 'bi bi-bar-chart-fill';
+            txt.textContent = 'Ver Calificaciones e Intentos de Evaluación';
+        }
     }
 
     // ─── Cargar estado de intentos (conteo + pendientes + botones) ───────────────
@@ -846,6 +961,9 @@
         document.getElementById('panelAsignacion').classList.add('d-none');
         document.getElementById('panelTablas').classList.add('d-none');
         document.getElementById('emptyState').classList.remove('d-none');
+        // Resetear estado lazy
+        inscritosCache = null;
+        evaluacionesCargadas = false;
     }
 
     // Permitir buscar con Enter
