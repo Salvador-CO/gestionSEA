@@ -9,6 +9,11 @@
                 <span class="badge bg-primary">Filtrado por: {{ $centroFiltrado }}</span>
             @endif
         </div>
+        <div>
+            <a href="{{ route('calificaciones.create') }}" class="btn btn-outline-primary fw-bold shadow-sm">
+                <i class="bi bi-search me-1"></i> Revisión Detallada
+            </a>
+        </div>
     </div>
 
     <div class="card mb-4 shadow-sm">

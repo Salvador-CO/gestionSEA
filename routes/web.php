@@ -62,6 +62,12 @@ Route::middleware(['auth'])->group(function () {
     */
     Route::middleware(['checkpermiso:ver_calificaciones'])->group(function () {
         Route::resource('calificaciones', CalificacionesController::class);
+        
+        // Endpoints API para Revisión de Exámenes
+        Route::post('/calificaciones/api/buscar-usuario', [CalificacionesController::class, 'buscarUsuario'])->name('calificaciones.api.buscarUsuario');
+        Route::get('/calificaciones/api/examenes/{userid}', [CalificacionesController::class, 'obtenerExamenes'])->name('calificaciones.api.obtenerExamenes');
+        Route::get('/calificaciones/api/intentos/{quizid}/{userid}', [CalificacionesController::class, 'obtenerIntentos'])->name('calificaciones.api.obtenerIntentos');
+        Route::get('/calificaciones/api/revision/{attemptid}', [CalificacionesController::class, 'obtenerRevision'])->name('calificaciones.api.obtenerRevision');
     });
 
     /* |--- D. MÓDULO DE REGISTRO INICIAL --- 

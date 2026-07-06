@@ -177,4 +177,47 @@ class MoodleService extends MoodleClient
             'fuente' => now()->timezone('America/Mexico_City')->format('d/m/Y H:i')
         ];
     }
+
+    /**
+     * Obtiene los cursos en los que está matriculado un usuario
+     */
+    public function getUsersCourses($userId)
+    {
+        return $this->getCall('core_enrol_get_users_courses', ['userid' => $userId]);
+    }
+
+    /**
+     * Obtiene los exámenes de un conjunto de cursos
+     */
+    public function getQuizzesByCourses(array $courseIds)
+    {
+        $params = [];
+        foreach ($courseIds as $index => $id) {
+            $params["courseids[$index]"] = $id;
+        }
+        $response = $this->getCall('mod_quiz_get_quizzes_by_courses', $params);
+        return $response['quizzes'] ?? [];
+    }
+
+    /**
+     * Obtiene los intentos de un usuario en un quiz (solo finalizados)
+     */
+    public function getUserAttempts($quizId, $userId)
+    {
+        $params = [
+            'quizid' => $quizId,
+            'userid' => $userId,
+            'status' => 'finished'
+        ];
+        $response = $this->getCall('mod_quiz_get_user_attempts', $params);
+        return $response['attempts'] ?? [];
+    }
+
+    /**
+     * Obtiene la revisión detallada de un intento (preguntas, estado, calificación y html con feedback)
+     */
+    public function getAttemptReview($attemptId)
+    {
+        return $this->getCall('mod_quiz_get_attempt_review', ['attemptid' => $attemptId]);
+    }
 }
