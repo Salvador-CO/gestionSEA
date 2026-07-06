@@ -99,10 +99,16 @@ class RegistroController extends Controller
             }
 
             $cursosInscritosIds = [];
+            $cursosInscritosDetalle = [];
             if (method_exists($this->registro, 'obtenerCursosUsuario')) {
                 $cursosUsuario = $this->registro->obtenerCursosUsuario($userMoodle['id']);
                 if (is_array($cursosUsuario)) {
-                    $cursosInscritosIds = array_column($cursosUsuario, 'id');
+                    $cursosInscritosIds    = array_column($cursosUsuario, 'id');
+                    $cursosInscritosDetalle = array_map(fn($c) => [
+                        'id'        => $c['id'],
+                        'fullname'  => $c['fullname']  ?? 'Curso',
+                        'shortname' => $c['shortname'] ?? '',
+                    ], $cursosUsuario);
                 }
             } elseif (method_exists($this->moodle, 'getEnrolledCourses')) {
                 $cursosUsuario = $this->moodle->getEnrolledCourses($userMoodle['id']);
@@ -112,12 +118,13 @@ class RegistroController extends Controller
             }
 
             return response()->json([
-                'exists' => true, 
-                'acceso_denegado' => false,
-                'moodle_id' => $userMoodle['id'],
-                'nombre' => $nombreCompleto,
-                'centro' => $centro,
-                'cursos_inscritos' => $cursosInscritosIds
+                'exists'               => true,
+                'acceso_denegado'      => false,
+                'moodle_id'            => $userMoodle['id'],
+                'nombre'               => $nombreCompleto,
+                'centro'               => $centro,
+                'cursos_inscritos'     => $cursosInscritosIds,
+                'cursos_detalle'       => $cursosInscritosDetalle,
             ]);
         }
 

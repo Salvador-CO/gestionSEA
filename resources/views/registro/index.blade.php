@@ -246,6 +246,11 @@
                                         <h6 id="studentName" class="mb-0 fw-bold text-dark">-</h6>
                                         <span id="studentCentro" class="badge bg-info text-dark small-text">Centro</span>
                                     </div>
+                                    <div class="flex-shrink-0 ms-2">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" id="btnVerInscritos">
+                                            <i class="bi bi-card-list"></i> Cursos Previos
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -301,7 +306,7 @@
 
                     <!-- Estado Vacío (antes de validar) -->
                     <div id="emptyCursos"
-                        class="card shadow-sm h-100 border-0 bg-light d-flex align-items-center justify-content-center p-5 text-center text-muted">
+                        class="card shadow-sm h-100 border-0 bg-light d-none d-lg-flex align-items-center justify-content-center p-5 text-center text-muted">
                         <i class="bi bi-person-check display-1 mb-3 opacity-25"></i>
                         <h6 class="fw-bold text-muted">Paso 2 disponible aquí</h6>
                         <p class="small">Valide el correo del alumno en el <strong>Paso 1</strong><br>para habilitar la asignación de cursos.</p>
@@ -311,11 +316,29 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal Cursos Inscritos -->
+    <div class="modal fade" id="modalCursosInscritos" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-card-list text-primary me-2"></i>Cursos Previos del Alumno</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <ul class="list-group list-group-flush" id="listaCursosPreviosModal">
+                        <!-- Dynamic content -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
 let cursosInscritosContador = 0;
 let cursosYaInscritosIds = [];
+let cursosInscritosDetalleGlobal = [];
 
 function showToast(message, type = 'success') {
     const container = document.getElementById('toastContainer');
@@ -414,6 +437,7 @@ document.getElementById('btnCheckEmail').addEventListener('click', function() {
                     document.getElementById('formRegistro').style.display = 'none';
                     // Doble candado: IDs ya inscritos para filtro JS (refuerzo del backend)
                     cursosYaInscritosIds = data.cursos_inscritos ? data.cursos_inscritos.map(id => parseInt(id)) : [];
+                    cursosInscritosDetalleGlobal = data.cursos_detalle || [];
                     iniciarFlujoCursos(data.moodle_id, data.nombre, data.centro);
                     showToast("Usuario localizado", "success");
                 }
@@ -422,8 +446,11 @@ document.getElementById('btnCheckEmail').addEventListener('click', function() {
                 document.getElementById('formRegistro').style.display = 'block';
                 document.getElementById('final_email').value = email;
                 document.getElementById('sectionCursos').style.display = 'none';
+                document.getElementById('emptyCursos').classList.remove('d-none');
+                document.getElementById('emptyCursos').classList.add('d-lg-flex');
                 document.getElementById('emptyCursos').style.display = 'flex';
                 cursosYaInscritosIds = [];
+                cursosInscritosDetalleGlobal = [];
             }
         })
         .catch(error => {
@@ -435,6 +462,8 @@ document.getElementById('btnCheckEmail').addEventListener('click', function() {
 
 function iniciarFlujoCursos(userId, userName, centro) {
     document.getElementById('sectionCursos').style.display = 'block';
+    document.getElementById('emptyCursos').classList.remove('d-lg-flex');
+    document.getElementById('emptyCursos').classList.add('d-none');
     document.getElementById('emptyCursos').style.display = 'none';
     document.getElementById('currentUserId').value = userId;
     document.getElementById('currentUserCentro').value = centro;
@@ -574,6 +603,26 @@ document.addEventListener('DOMContentLoaded', function() {
     if (emailInput.value.length > 5) {
         document.getElementById('btnCheckEmail').click();
     }
+});
+
+// Evento para abrir modal de cursos previos
+document.getElementById('btnVerInscritos').addEventListener('click', function() {
+    const ul = document.getElementById('listaCursosPreviosModal');
+    ul.innerHTML = '';
+    
+    if (cursosInscritosDetalleGlobal.length === 0) {
+        ul.innerHTML = '<li class="list-group-item text-muted text-center py-4"><i class="bi bi-inbox fs-3 d-block mb-2 text-secondary opacity-50"></i>El alumno no tiene cursos previos inscritos.</li>';
+    } else {
+        cursosInscritosDetalleGlobal.forEach(c => {
+            ul.innerHTML += `<li class="list-group-item">
+                <div class="fw-bold text-dark"><i class="bi bi-check2-circle text-success me-2"></i>${c.fullname}</div>
+                <div class="small text-muted ms-4">${c.shortname}</div>
+            </li>`;
+        });
+    }
+    
+    const modal = new bootstrap.Modal(document.getElementById('modalCursosInscritos'));
+    modal.show();
 });
 </script>
 @endsection

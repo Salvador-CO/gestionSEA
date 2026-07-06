@@ -182,6 +182,34 @@ class RegistroService extends MoodleClient
         return $response->json();
     }
 
+    /**
+     * Obtiene los cursos en los que está inscrito un usuario en Moodle.
+     * Devuelve array con id, fullname y shortname de cada curso.
+     */
+    public function obtenerCursosUsuario($userId)
+    {
+        $params = [
+            'wstoken'            => $this->token,
+            'wsfunction'         => 'core_enrol_get_users_courses',
+            'moodlewsrestformat' => 'json',
+            'userid'             => (int)$userId,
+        ];
+
+        try {
+            $response = Http::timeout(30)->asForm()->post($this->url, $params);
+            $res = $response->json();
+
+            if (isset($res['exception']) || !is_array($res)) {
+                Log::warning("obtenerCursosUsuario: Moodle error para userId={$userId}: " . ($res['message'] ?? 'sin detalle'));
+                return [];
+            }
+
+            return $res; // Cada elemento tiene: id, fullname, shortname, format, etc.
+        } catch (\Exception $e) {
+            Log::error('Error obteniendo cursos del usuario: ' . $e->getMessage());
+            return [];
+        }
+    }
 
     public function obtenerMiembrosGrupo($groupId) {
         $params = [
