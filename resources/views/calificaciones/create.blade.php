@@ -37,6 +37,9 @@
     .status-incorrect { border-left: 5px solid #dc3545; }
     .status-partial { border-left: 5px solid #ffc107; }
 
+    /* Ocultar la bandera y otros íconos que abultan mucho */
+    .moodle-feedback-container .questionflag { display: none !important; }
+
     /* Ocultar el texto de la pregunta (seguridad) */
     .moodle-feedback-container .qtext,
     .moodle-feedback-container .ablock,
@@ -49,7 +52,9 @@
     .moodle-feedback-container .outcome,
     .moodle-feedback-container .specificfeedback,
     .moodle-feedback-container .generalfeedback,
-    .moodle-feedback-container .rightanswer {
+    .moodle-feedback-container .rightanswer,
+    .moodle-feedback-container .comment,
+    .moodle-feedback-container .makecomment {
         display: block !important;
         background-color: #f8f9fa;
         padding: 15px;
@@ -59,6 +64,15 @@
         color: #333;
         border-left: 4px solid #0dcaf0;
     }
+
+    /* Reglas de Seguridad por Rol (Si NO es admin o jefe) */
+    @if(!$isAdminOrJefe)
+        .moodle-feedback-container .rightanswer,
+        .moodle-feedback-container .comment,
+        .moodle-feedback-container .makecomment {
+            display: none !important;
+        }
+    @endif
 </style>
 
 <div class="container-fluid py-4">

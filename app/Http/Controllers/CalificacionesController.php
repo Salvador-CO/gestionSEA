@@ -47,7 +47,10 @@ class CalificacionesController extends Controller
 
     public function create()
     {
-        return view('calificaciones.create');
+        $rolNombre = strtolower(auth()->user()->rol->nombre ?? '');
+        $isAdminOrJefe = in_array($rolNombre, ['administrador', 'jefe', 'admin']);
+        
+        return view('calificaciones.create', compact('isAdminOrJefe'));
     }
 
     public function buscarUsuario(Request $request)
@@ -62,12 +65,13 @@ class CalificacionesController extends Controller
 
         // Si no se encuentra por email, buscar por username (matricula)
         if (!$user) {
-            $response = $this->moodle->getCall('core_user_get_users', [
-                'criteria' => [['key' => 'username', 'value' => strtolower($criterio)]]
+            $response = $this->moodle->getCall('core_user_get_users_by_field', [
+                'field'  => 'username',
+                'values' => [strtolower($criterio)]
             ]);
             
-            if ($response && !empty($response['users'])) {
-                $u = $response['users'][0];
+            if ($response && is_array($response) && count($response) > 0 && !isset($response['exception'])) {
+                $u = $response[0];
                 $centro = 'Sin Centro';
                 if (!empty($u['customfields'])) {
                     foreach ($u['customfields'] as $f) {
