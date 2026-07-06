@@ -40,13 +40,25 @@
     /* Ocultar la bandera y otros íconos que abultan mucho */
     .moodle-feedback-container .questionflag { display: none !important; }
 
-    /* Ocultar el texto de la pregunta (seguridad) */
+    /* Ocultar elementos técnicos de Moodle siempre */
+    .moodle-feedback-container .im-controls { display: none !important; }
+
+    @if(!$isAdminOrJefe)
+    /* SEGURIDAD: Ocultar texto de pregunta y opciones de respuesta para asesores */
     .moodle-feedback-container .qtext,
     .moodle-feedback-container .ablock,
-    .moodle-feedback-container .answer,
-    .moodle-feedback-container .im-controls {
+    .moodle-feedback-container .answer {
         display: none !important;
     }
+    
+    /* Deshabilitar clics en cualquier enlace dentro del feedback para no administradores */
+    .moodle-feedback-container a {
+        pointer-events: none;
+        cursor: default;
+        text-decoration: none;
+        color: inherit;
+    }
+    @endif
 
     /* Mostrar solo la retroalimentación */
     .moodle-feedback-container .outcome,
@@ -73,6 +85,21 @@
             display: none !important;
         }
     @endif
+
+    /* Colores suaves para los encabezados de pregunta */
+    .header-correct { background-color: #e8f5e9; }
+    .header-incorrect { background-color: #ffebee; }
+    .header-partial { background-color: #fff8e1; }
+
+    /* Estilos de impresión (Exportar a PDF) */
+    @media print {
+        body * { visibility: hidden; }
+        .print-area, .print-area * { visibility: visible; }
+        .print-area { position: absolute; left: 0; top: 0; width: 100%; }
+        .no-print { display: none !important; }
+        .card { border: none !important; box-shadow: none !important; }
+        .question-box { break-inside: avoid; border-color: #000; }
+    }
 </style>
 
 <div class="container-fluid py-4">
@@ -145,11 +172,16 @@
         </div>
 
         <!-- Panel Derecho: Resultados (Retroalimentación) -->
-        <div class="col-lg-8">
+        <div class="col-lg-8 print-area">
             <div class="card shadow-sm h-100 bg-light border-0">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                     <h6 class="mb-0 fw-bold"><i class="bi bi-journal-text me-2 text-primary"></i>Desglose de Resultados</h6>
-                    <span id="badgeCalificacion" class="badge bg-dark d-none fs-6">Nota: -</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <button id="btnImprimir" class="btn btn-sm btn-outline-secondary d-none no-print" onclick="window.print()">
+                            <i class="bi bi-printer me-1"></i> Descargar PDF
+                        </button>
+                        <span id="badgeCalificacion" class="badge bg-dark d-none fs-6">Nota: -</span>
+                    </div>
                 </div>
                 
                 <div class="card-body p-4" style="max-height: 75vh; overflow-y: auto;">
@@ -350,32 +382,61 @@ function renderizarRevision(questions) {
         questions.forEach((q, index) => {
             // Extraer estado
             let estadoClase = 'status-partial';
+            let headerClase = 'header-partial';
             let icon = 'bi-dash-circle text-warning';
+            let esCorrecta = false;
+            
             if (q.state.toLowerCase().includes('correct') && !q.state.toLowerCase().includes('incorrect')) {
                 estadoClase = 'status-correct';
+                headerClase = 'header-correct';
                 icon = 'bi-check-circle-fill text-success';
+                esCorrecta = true;
             } else if (q.state.toLowerCase().includes('incorrect')) {
                 estadoClase = 'status-incorrect';
+                headerClase = 'header-incorrect';
                 icon = 'bi-x-circle-fill text-danger';
             }
 
-            // Inyectar HTML y dejar que CSS oculte las partes que no queremos
-            const cardHtml = `
-                <div class="question-box ${estadoClase} animate__animated animate__fadeInUp" style="animation-delay: ${index * 0.05}s">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h6 class="mb-0 fw-bold"><i class="bi ${icon} me-2 fs-5 align-middle"></i>Pregunta ${q.number}</h6>
-                        <span class="badge bg-light text-dark border">Puntos: ${q.mark} / ${q.maxmark}</span>
+            // Si es correcta, solo mostrar un mensaje compacto sin todo el HTML (a menos que sea admin, si quieres, 
+            // pero para hacerla fácil de visualizar como se solicitó, la comprimiremos)
+            let contenidoCuerpo = '';
+            
+            if (esCorrecta) {
+                contenidoCuerpo = `
+                    <div class="text-success fw-bold p-3 bg-white rounded">
+                        <i class="bi bi-hand-thumbs-up-fill me-2"></i>¡Respuesta Correcta! No hay retroalimentación pendiente.
                     </div>
+                `;
+            } else {
+                contenidoCuerpo = `
                     <div class="moodle-feedback-container">
                         ${q.html}
+                    </div>
+                `;
+            }
+
+            // Inyectar HTML
+            const cardHtml = `
+                <div class="question-box ${estadoClase} animate__animated animate__fadeInUp p-0 overflow-hidden" style="animation-delay: ${index * 0.05}s">
+                    <div class="${headerClase} d-flex justify-content-between align-items-center p-3 border-bottom">
+                        <h6 class="mb-0 fw-bold"><i class="bi ${icon} me-2 fs-5 align-middle"></i>Pregunta ${q.number}</h6>
+                        <span class="badge bg-white text-dark border">Puntos: ${q.mark} / ${q.maxmark}</span>
+                    </div>
+                    <div class="p-3">
+                        ${contenidoCuerpo}
                     </div>
                 </div>
             `;
             contenedor.insertAdjacentHTML('beforeend', cardHtml);
         });
+
+        // Asegurar que cualquier enlace de Moodle se abra en nueva pestaña
+        const links = contenedor.querySelectorAll('a');
+        links.forEach(a => a.setAttribute('target', '_blank'));
     }
     
     contenedor.classList.remove('d-none');
+    document.getElementById('btnImprimir').classList.remove('d-none');
 }
 
 function limpiarResultados() {
@@ -383,6 +444,7 @@ function limpiarResultados() {
     document.getElementById('contenedorPreguntas').classList.add('d-none');
     document.getElementById('contenedorPreguntas').innerHTML = '';
     document.getElementById('badgeCalificacion').classList.add('d-none');
+    document.getElementById('btnImprimir').classList.add('d-none');
 }
 
 // Permitir presionar Enter en el input
