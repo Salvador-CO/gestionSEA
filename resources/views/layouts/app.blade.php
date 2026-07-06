@@ -143,9 +143,17 @@
                 @foreach($permisosDinamicos as $permiso)
                     @if(auth()->user()->tienePermiso($permiso->nombre))
                         @php $ruta = str_replace('ver_', '', $permiso->nombre); @endphp
-                        <a href="/{{ $ruta }}" class="{{ Request::is($ruta.'*') ? 'active' : '' }}">
+                        <a href="/{{ $ruta }}" class="{{ Request::is($ruta.'*') && !Request::is($ruta.'/usuarios*') ? 'active' : '' }}">
                             <i class="bi bi-layers me-2"></i> {{ ucfirst(str_replace('_', ' ', $ruta)) }}
                         </a>
+                        @if($ruta === 'registro')
+                            {{-- Sub-ítem: Buscador de Estudiantes --}}
+                            <a href="{{ route('registro.usuarios') }}"
+                               class="{{ Request::is('registro/usuarios*') ? 'active' : '' }}"
+                               style="padding-left: 40px; font-size: 0.82rem;">
+                                <i class="bi bi-search me-2"></i> Buscador
+                            </a>
+                        @endif
                     @endif
                 @endforeach
             @endif

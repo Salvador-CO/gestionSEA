@@ -222,11 +222,12 @@ function ejecutarBusquedaAsincrona(event) {
                 document.getElementById('tbodyCursos').innerHTML = htmlCursos;
                 
                 // Acción del botón Inscribir Directo
+                // FIX: Pasamos el email del alumno encontrado para que el form lo pre-llene y auto-valide
                 const btnInscribir = document.getElementById('btnInscribirDirecto');
                 if (btnInscribir) {
                     btnInscribir.onclick = function(e) {
                         e.preventDefault();
-                        window.location.href = "{{ route('registro.index') }}";
+                        window.location.href = `{{ route('registro.index') }}?email=${encodeURIComponent(estudiante.email)}`;
                     };
                 }
 
