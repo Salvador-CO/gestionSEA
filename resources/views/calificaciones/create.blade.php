@@ -40,8 +40,10 @@
     /* Ocultar la bandera y otros íconos que abultan mucho */
     .moodle-feedback-container .questionflag { display: none !important; }
 
-    /* Ocultar elementos técnicos de Moodle siempre */
-    .moodle-feedback-container .im-controls { display: none !important; }
+    /* Ocultar elementos técnicos y comentarios para TODOS siempre */
+    .moodle-feedback-container .im-controls,
+    .moodle-feedback-container .comment,
+    .moodle-feedback-container .makecomment { display: none !important; }
 
     @if(!$isAdminOrJefe)
     /* SEGURIDAD: Ocultar texto de pregunta y opciones de respuesta para asesores */
@@ -64,9 +66,7 @@
     .moodle-feedback-container .outcome,
     .moodle-feedback-container .specificfeedback,
     .moodle-feedback-container .generalfeedback,
-    .moodle-feedback-container .rightanswer,
-    .moodle-feedback-container .comment,
-    .moodle-feedback-container .makecomment {
+    .moodle-feedback-container .rightanswer {
         display: block !important;
         background-color: #f8f9fa;
         padding: 15px;
@@ -79,9 +79,7 @@
 
     /* Reglas de Seguridad por Rol (Si NO es admin o jefe) */
     @if(!$isAdminOrJefe)
-        .moodle-feedback-container .rightanswer,
-        .moodle-feedback-container .comment,
-        .moodle-feedback-container .makecomment {
+        .moodle-feedback-container .rightanswer {
             display: none !important;
         }
     @endif
@@ -98,7 +96,10 @@
         .print-area { position: absolute; left: 0; top: 0; width: 100%; }
         .no-print { display: none !important; }
         .card { border: none !important; box-shadow: none !important; }
-        .question-box { break-inside: avoid; border-color: #000; }
+        .accordion-item { border: 1px solid #ddd !important; box-shadow: none !important; margin-bottom: 20px; break-inside: avoid; }
+        /* Forzar que los colapsables se abran al imprimir */
+        .collapse:not(.show) { display: block !important; height: auto !important; }
+        .accordion-button::after { display: none !important; }
     }
 </style>
 
@@ -199,8 +200,8 @@
                         <div class="mt-3 fw-bold text-muted">Consultando plataforma, por favor espere...</div>
                     </div>
 
-                    <!-- Contenedor Dinámico de Preguntas -->
-                    <div id="contenedorPreguntas" class="d-none"></div>
+                    <!-- Contenedor Dinámico de Preguntas (Acordeón) -->
+                    <div id="contenedorPreguntas" class="d-none accordion"></div>
 
                 </div>
             </div>
@@ -415,15 +416,21 @@ function renderizarRevision(questions) {
                 `;
             }
 
-            // Inyectar HTML
+            // Inyectar HTML estilo Acordeón
             const cardHtml = `
-                <div class="question-box ${estadoClase} animate__animated animate__fadeInUp p-0 overflow-hidden" style="animation-delay: ${index * 0.05}s">
-                    <div class="${headerClase} d-flex justify-content-between align-items-center p-3 border-bottom">
-                        <h6 class="mb-0 fw-bold"><i class="bi ${icon} me-2 fs-5 align-middle"></i>Pregunta ${q.number}</h6>
-                        <span class="badge bg-white text-dark border">Puntos: ${q.mark} / ${q.maxmark}</span>
-                    </div>
-                    <div class="p-3">
-                        ${contenidoCuerpo}
+                <div class="accordion-item ${estadoClase} animate__animated animate__fadeInUp border rounded shadow-sm mb-3 overflow-hidden" style="animation-delay: ${index * 0.05}s">
+                    <h2 class="accordion-header" id="heading${index}">
+                        <button class="accordion-button collapsed ${headerClase}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}" aria-expanded="false" aria-controls="collapse${index}">
+                            <div class="d-flex justify-content-between align-items-center w-100 me-3">
+                                <span class="fw-bold fs-6"><i class="bi ${icon} me-2 fs-5 align-middle"></i>Pregunta ${q.number}</span>
+                                <span class="badge bg-white text-dark border shadow-sm">Puntos: ${q.mark} / ${q.maxmark}</span>
+                            </div>
+                        </button>
+                    </h2>
+                    <div id="collapse${index}" class="accordion-collapse collapse" aria-labelledby="heading${index}">
+                        <div class="accordion-body p-3 bg-white">
+                            ${contenidoCuerpo}
+                        </div>
                     </div>
                 </div>
             `;
