@@ -8,7 +8,7 @@
             <div>
                 <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-search text-primary me-2"></i>Buscador de Estudiantes Digital</h5>
                 <p class="mb-0 text-muted small">
-                    <i class="bi bi-building"></i> Tu Centro actual: 
+                    <i class="bi bi-building"></i> Tu Centro actual:
                     <span class="badge bg-info text-white">{{ $user->centro ?? 'Administración Global' }}</span>
                 </p>
             </div>
@@ -23,7 +23,7 @@
                 <div class="col-md-7">
                     <div class="input-group input-group-lg shadow-sm">
                         <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-person-badge"></i></span>
-                        <input type="text" id="inputCriterio" class="form-control border-start-0" placeholder="Buscar por Nombre, Apellidos, Matrícula o Correo..." required>
+                        <input type="text" id="inputCriterio" class="form-control border-start-0" placeholder="Buscar por Matrícula o Correo..." required>
                         <button type="submit" id="btnBuscarSubmit" class="btn btn-primary px-4 fw-bold">
                             <i class="bi bi-search me-1"></i> Buscar
                         </button>
@@ -122,141 +122,150 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
-function ejecutarBusquedaAsincrona(event) {
-    // 1. Evitamos por completo que la página intente recargarse
-    event.preventDefault();
-    
-    const criterioInput = document.getElementById('inputCriterio');
-    const criterio = criterioInput ? criterioInput.value.trim() : '';
-    
-    if (!criterio) return false;
+    function ejecutarBusquedaAsincrona(event) {
+        // 1. Evitamos por completo que la página intente recargarse
+        event.preventDefault();
 
-    // 2. Elementos del DOM con JS Nativo para evitar fallos de librerías
-    const btnSubmit = document.getElementById('btnBuscarSubmit');
-    const contenedorResultados = document.getElementById('contenedorResultados');
-    const alertMessage = document.getElementById('alertMessage');
-    const statusLoader = document.getElementById('statusLoader');
-    const loaderMessage = document.getElementById('loaderMessage');
+        const criterioInput = document.getElementById('inputCriterio');
+        const criterio = criterioInput ? criterioInput.value.trim() : '';
 
-    // 3. Estado visual de inicio de carga
-    if (btnSubmit) btnSubmit.disabled = true;
-    if (contenedorResultados) contenedorResultados.classList.add('d-none');
-    if (alertMessage) {
-        alertMessage.classList.add('d-none');
-        alertMessage.classList.remove('alert-warning', 'alert-danger', 'alert-success');
-    }
-    if (statusLoader) statusLoader.classList.remove('d-none');
-    if (loaderMessage) loaderMessage.innerText = 'Buscando coincidencia de datos...';
+        if (!criterio) return false;
 
-    // 4. Petición HTTP usando Fetch API (Nativo del Navegador)
-    fetch('/registro/buscar-estudiante', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify({ query: criterio })
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Error en la respuesta del servidor (Código: ' + response.status + ')');
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (btnSubmit) btnSubmit.disabled = false;
+        // 2. Elementos del DOM con JS Nativo para evitar fallos de librerías
+        const btnSubmit = document.getElementById('btnBuscarSubmit');
+        const contenedorResultados = document.getElementById('contenedorResultados');
+        const alertMessage = document.getElementById('alertMessage');
+        const statusLoader = document.getElementById('statusLoader');
+        const loaderMessage = document.getElementById('loaderMessage');
 
-        if (data.success && data.usuarios && data.usuarios.length > 0) {
-            let estudiante = data.usuarios[0];
-            
-            if (loaderMessage) {
-                loaderMessage.innerHTML = 'Espere, estamos consultando la información completa de <br><span class="text-primary">' + estudiante.fullname + '</span>';
-            }
-
-            setTimeout(function() {
-                if (statusLoader) statusLoader.classList.add('d-none');
-                
-                // Mapeo de datos personales
-                let inicial = estudiante.firstname ? estudiante.firstname.substring(0, 1).toUpperCase() : 'U';
-                document.getElementById('avatarEstudiante').innerText = inicial;
-                document.getElementById('txtNombreCompleto').innerText = estudiante.fullname;
-                document.getElementById('badgeCentro').innerHTML = '<i class="bi bi-geo-alt-fill text-danger me-1"></i>' + estudiante.centro;
-                document.getElementById('txtMatricula').innerText = estudiante.username;
-                document.getElementById('txtCorreo').innerText = estudiante.email;
-                document.getElementById('txtRol').innerText = estudiante.rol;
-                
-                // Formateo de fecha de acceso
-                if (estudiante.lastaccess > 0) {
-                    let date = new Date(estudiante.lastaccess * 1000);
-                    let fechaFormateada = date.getDate().toString().padStart(2, '0') + '/' + 
-                                         (date.getMonth()+1).toString().padStart(2, '0') + '/' + 
-                                         date.getFullYear() + ' ' + 
-                                         date.getHours().toString().padStart(2, '0') + ':' + 
-                                         date.getMinutes().toString().padStart(2, '0');
-                    document.getElementById('txtAcceso').innerHTML = '<span class="text-success fw-bold"><i class="bi bi-check-circle-fill"></i> ' + fechaFormateada + '</span>';
-                } else {
-                    document.getElementById('txtAcceso').innerHTML = '<span class="badge bg-warning text-dark">Sin actividad</span>';
-                }
-
-                // Mapeo de Cursos y Grupos Académicos
-                let htmlCursos = '';
-                if (estudiante.cursos && estudiante.cursos.length > 0) {
-                    estudiante.cursos.forEach(function(curso) {
-                        let badgesGrupos = '';
-                        curso.grupos.forEach(function(gName) {
-                            let badgeClass = gName.includes('Sin grupo') ? 'bg-light text-muted border' : 'bg-primary text-white';
-                            badgesGrupos += '<span class="badge ' + badgeClass + ' me-1 mb-1 d-inline-block">' + gName + '</span>';
-                        });
-
-                        htmlCursos += '<tr>' +
-                            '<td><div class="fw-bold text-dark">' + curso.fullname + '</div></td>' +
-                            '<td><code class="text-secondary">' + curso.shortname + '</code></td>' +
-                            '<td>' + badgesGrupos + '</td>' +
-                        '</tr>';
-                    });
-                } else {
-                    htmlCursos = '<tr><td colspan="3" class="text-center text-muted py-3">Este estudiante no se encuentra inscrito en ningún curso actualmente.</td></tr>';
-                }
-                
-                document.getElementById('tbodyCursos').innerHTML = htmlCursos;
-                
-                // Acción del botón Inscribir Directo
-                // FIX: Pasamos el email del alumno encontrado para que el form lo pre-llene y auto-valide
-                const btnInscribir = document.getElementById('btnInscribirDirecto');
-                if (btnInscribir) {
-                    btnInscribir.onclick = function(e) {
-                        e.preventDefault();
-                        window.location.href = `{{ route('registro.index') }}?email=${encodeURIComponent(estudiante.email)}`;
-                    };
-                }
-
-                if (contenedorResultados) contenedorResultados.classList.remove('d-none');
-            }, 1200);
-
-        } else {
-            if (statusLoader) statusLoader.classList.add('d-none');
-            if (alertMessage) {
-                alertMessage.innerText = data.message || 'No se obtuvieron resultados válidos.';
-                alertMessage.classList.add('alert-warning');
-                alertMessage.classList.remove('d-none');
-            }
-        }
-    })
-    .catch(error => {
-        if (btnSubmit) btnSubmit.disabled = false;
-        if (statusLoader) statusLoader.classList.add('d-none');
+        // 3. Estado visual de inicio de carga
+        if (btnSubmit) btnSubmit.disabled = true;
+        if (contenedorResultados) contenedorResultados.classList.add('d-none');
         if (alertMessage) {
-            alertMessage.innerText = 'Error de conexión: ' + error.message;
-            alertMessage.classList.add('alert-danger');
-            alertMessage.classList.remove('d-none');
+            alertMessage.classList.add('d-none');
+            alertMessage.classList.remove('alert-warning', 'alert-danger', 'alert-success');
         }
-    });
-}
+        if (statusLoader) statusLoader.classList.remove('d-none');
+        if (loaderMessage) loaderMessage.innerText = 'Buscando coincidencia de datos...';
+
+        // 4. Petición HTTP usando Fetch API (Nativo del Navegador)
+        fetch('/registro/buscar-estudiante', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    query: criterio
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error en la respuesta del servidor (Código: ' + response.status + ')');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (btnSubmit) btnSubmit.disabled = false;
+
+                if (data.success && data.usuarios && data.usuarios.length > 0) {
+                    let estudiante = data.usuarios[0];
+
+                    if (loaderMessage) {
+                        loaderMessage.innerHTML = 'Espere, estamos consultando la información completa de <br><span class="text-primary">' + estudiante.fullname + '</span>';
+                    }
+
+                    setTimeout(function() {
+                        if (statusLoader) statusLoader.classList.add('d-none');
+
+                        // Mapeo de datos personales
+                        let inicial = estudiante.firstname ? estudiante.firstname.substring(0, 1).toUpperCase() : 'U';
+                        document.getElementById('avatarEstudiante').innerText = inicial;
+                        document.getElementById('txtNombreCompleto').innerText = estudiante.fullname;
+                        document.getElementById('badgeCentro').innerHTML = '<i class="bi bi-geo-alt-fill text-danger me-1"></i>' + estudiante.centro;
+                        document.getElementById('txtMatricula').innerText = estudiante.username;
+                        document.getElementById('txtCorreo').innerText = estudiante.email;
+                        document.getElementById('txtRol').innerText = estudiante.rol;
+
+                        // Formateo de fecha de acceso
+                        if (estudiante.lastaccess > 0) {
+                            let date = new Date(estudiante.lastaccess * 1000);
+                            let fechaFormateada = date.getDate().toString().padStart(2, '0') + '/' +
+                                (date.getMonth() + 1).toString().padStart(2, '0') + '/' +
+                                date.getFullYear() + ' ' +
+                                date.getHours().toString().padStart(2, '0') + ':' +
+                                date.getMinutes().toString().padStart(2, '0');
+                            document.getElementById('txtAcceso').innerHTML = '<span class="text-success fw-bold"><i class="bi bi-check-circle-fill"></i> ' + fechaFormateada + '</span>';
+                        } else {
+                            document.getElementById('txtAcceso').innerHTML = '<span class="badge bg-warning text-dark">Sin actividad</span>';
+                        }
+
+                        // Mapeo de Cursos y Grupos Académicos
+                        let htmlCursos = '';
+                        if (estudiante.cursos && estudiante.cursos.length > 0) {
+                            estudiante.cursos.forEach(function(curso) {
+                                let badgesGrupos = '';
+                                curso.grupos.forEach(function(gName) {
+                                    let badgeClass = gName.includes('Sin grupo') ? 'bg-light text-muted border' : 'bg-primary text-white';
+                                    badgesGrupos += '<span class="badge ' + badgeClass + ' me-1 mb-1 d-inline-block">' + gName + '</span>';
+                                });
+
+                                htmlCursos += '<tr>' +
+                                    '<td><div class="fw-bold text-dark">' + curso.fullname + '</div></td>' +
+                                    '<td><code class="text-secondary">' + curso.shortname + '</code></td>' +
+                                    '<td>' + badgesGrupos + '</td>' +
+                                    '</tr>';
+                            });
+                        } else {
+                            htmlCursos = '<tr><td colspan="3" class="text-center text-muted py-3">Este estudiante no se encuentra inscrito en ningún curso actualmente.</td></tr>';
+                        }
+
+                        document.getElementById('tbodyCursos').innerHTML = htmlCursos;
+
+                        // Acción del botón Inscribir Directo
+                        // FIX: Pasamos el email del alumno encontrado para que el form lo pre-llene y auto-valide
+                        const btnInscribir = document.getElementById('btnInscribirDirecto');
+                        if (btnInscribir) {
+                            btnInscribir.onclick = function(e) {
+                                e.preventDefault();
+                                window.location.href = `{{ route('registro.index') }}?email=${encodeURIComponent(estudiante.email)}`;
+                            };
+                        }
+
+                        if (contenedorResultados) contenedorResultados.classList.remove('d-none');
+                    }, 1200);
+
+                } else {
+                    if (statusLoader) statusLoader.classList.add('d-none');
+                    if (alertMessage) {
+                        alertMessage.innerText = data.message || 'No se obtuvieron resultados válidos.';
+                        alertMessage.classList.add('alert-warning');
+                        alertMessage.classList.remove('d-none');
+                    }
+                }
+            })
+            .catch(error => {
+                if (btnSubmit) btnSubmit.disabled = false;
+                if (statusLoader) statusLoader.classList.add('d-none');
+                if (alertMessage) {
+                    alertMessage.innerText = 'Error de conexión: ' + error.message;
+                    alertMessage.classList.add('alert-danger');
+                    alertMessage.classList.remove('d-none');
+                }
+            });
+    }
 </script>
 
 <style>
-    .table th { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
-    .badge { font-weight: 600; }
+    .table th {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .badge {
+        font-weight: 600;
+    }
 </style>
 @endsection
