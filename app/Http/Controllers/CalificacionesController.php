@@ -90,6 +90,20 @@ class CalificacionesController extends Controller
         }
 
         if ($user) {
+            // Validacion de Centro
+            $rolNombre = strtolower(auth()->user()->rol->nombre ?? '');
+            $isAdminOrJefe = in_array($rolNombre, ['administrador', 'jefe', 'admin']);
+            $centroUsuario = auth()->user()->centro ?? 'N/A';
+
+            if (!$isAdminOrJefe && $centroUsuario !== 'N/A' && !empty($centroUsuario)) {
+                if (strtolower($user['centro']) !== strtolower($centroUsuario)) {
+                    return response()->json([
+                        'success' => false, 
+                        'message' => 'El alumno pertenece al centro (' . $user['centro'] . '), no tienes permisos para revisarlo en tu centro actual (' . $centroUsuario . ').'
+                    ]);
+                }
+            }
+
             return response()->json(['success' => true, 'usuario' => $user]);
         }
         
