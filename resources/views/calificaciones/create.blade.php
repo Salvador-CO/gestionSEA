@@ -84,10 +84,10 @@
         }
     @endif
 
-    /* Colores suaves para los encabezados de pregunta */
-    .header-correct { background-color: #e8f5e9; }
-    .header-incorrect { background-color: #ffebee; }
-    .header-partial { background-color: #fff8e1; }
+    /* Evitar que el texto del acordeón cambie a azul al abrirse */
+    .accordion-button:not(.collapsed) {
+        color: inherit !important;
+    }
 
     /* Estilos de impresión (Exportar a PDF) */
     @media print {
@@ -383,19 +383,22 @@ function renderizarRevision(questions) {
         questions.forEach((q, index) => {
             // Extraer estado
             let estadoClase = 'status-partial';
-            let headerClase = 'header-partial';
-            let icon = 'bi-dash-circle text-warning';
+            let headerClase = 'bg-warning text-dark';
+            let icon = 'bi-dash-circle text-dark';
+            let badgeStyle = 'text-dark';
             let esCorrecta = false;
             
             if (q.state.toLowerCase().includes('correct') && !q.state.toLowerCase().includes('incorrect')) {
                 estadoClase = 'status-correct';
-                headerClase = 'header-correct';
-                icon = 'bi-check-circle-fill text-success';
+                headerClase = 'bg-success text-white';
+                icon = 'bi-check-circle-fill text-white';
+                badgeStyle = 'text-success';
                 esCorrecta = true;
             } else if (q.state.toLowerCase().includes('incorrect')) {
                 estadoClase = 'status-incorrect';
-                headerClase = 'header-incorrect';
-                icon = 'bi-x-circle-fill text-danger';
+                headerClase = 'bg-danger text-white';
+                icon = 'bi-x-circle-fill text-white';
+                badgeStyle = 'text-danger';
             }
 
             // Si es correcta, solo mostrar un mensaje compacto sin todo el HTML (a menos que sea admin, si quieres, 
@@ -423,7 +426,7 @@ function renderizarRevision(questions) {
                         <button class="accordion-button collapsed ${headerClase}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}" aria-expanded="false" aria-controls="collapse${index}">
                             <div class="d-flex justify-content-between align-items-center w-100 me-3">
                                 <span class="fw-bold fs-6"><i class="bi ${icon} me-2 fs-5 align-middle"></i>Pregunta ${q.number}</span>
-                                <span class="badge bg-white text-dark border shadow-sm">Puntos: ${q.mark} / ${q.maxmark}</span>
+                                <span class="badge bg-white ${badgeStyle} border shadow-sm fs-6">Puntos: ${q.mark} / ${q.maxmark}</span>
                             </div>
                         </button>
                     </h2>
